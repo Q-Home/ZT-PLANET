@@ -1,0 +1,20 @@
+{$ZT_DOMAIN} {
+  encode zstd gzip
+
+  handle_path /qbox/* {
+    root * /srv/public/qbox
+    file_server
+  }
+
+  handle {
+    reverse_proxy ztnet:3000
+  }
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "no-referrer"
+    Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  }
+}

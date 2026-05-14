@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: qhome-ztnet-postgres
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: ${TZ:-Europe/Brussels}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      qhome_zt_backend:
+        ipv4_address: 172.31.255.4
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  zerotier:
+    image: zyclonite/zerotier:1.14.2
+    container_name: qhome-zerotier
+    hostname: qhome-zerotier
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data/zerotier:/var/lib/zerotier-one
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "9993:9993/udp"
+    environment:
+      TZ: ${TZ:-Europe/Brussels}
+      ZT_OVERRIDE_LOCAL_CONF: "true"
+      ZT_ALLOW_MANAGEMENT_FROM: "172.31.255.0/29"
+    networks:
+      qhome_zt_backend:
+        ipv4_address: 172.31.255.2
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "zerotier-cli", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  ztnet:
+    image: sinamics/ztnet:latest
+    container_name: qhome-ztnet
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      zerotier:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_URL_INTERNAL: http://ztnet:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-Q-Home ZT Planet}
+      TZ: ${TZ:-Europe/Brussels}
+    volumes:
+      - ./data/zerotier:/var/lib/zerotier-one
+    expose:
+      - "3000"
+    networks:
+      qhome_zt_backend:
+        ipv4_address: 172.31.255.3
+    security_opt:
+      - no-new-privileges:true
+
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: qhome-ztnet-caddy
+    restart: unless-stopped
+    depends_on:
+      - ztnet
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy:/data
+      - ./data/caddy-config:/config
+      - ./data/public:/srv/public:ro
+    networks:
+      qhome_zt_backend:
+        ipv4_address: 172.31.255.5
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  qhome_zt_backend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.255.0/29
