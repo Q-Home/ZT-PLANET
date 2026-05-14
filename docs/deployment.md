@@ -29,13 +29,40 @@ openssl rand -base64 48
 sudo ./scripts/deploy.sh
 ```
 
-## 3. Generate private planet
+## 3. Generate Q-Home Moon/private root
 
 ```bash
 sudo ./scripts/generate-planet.sh
 ```
 
-## 4. Open ZTNET
+> Historical note: the script name remains for backwards compatibility. The script now generates a Moon/private root setup instead of a fully private planet deployment.
+
+Generated files:
+
+```text
+data/zerotier/*.moon
+```
+
+Example:
+
+```text
+0000009445e68ada.moon
+```
+
+## 4. Publish Moon file
+
+```bash
+mkdir -p data/public/qbox
+cp data/zerotier/*.moon data/public/qbox/
+```
+
+The file becomes available through:
+
+```text
+https://zt.q-home.be/qbox/<moon-file>.moon
+```
+
+## 5. Open ZTNET
 
 Visit:
 
@@ -45,6 +72,28 @@ https://zt.q-home.be
 
 Register the first user. The first user becomes admin.
 
-## 5. Create network
+## 6. Create network
 
-Create the Q-Box network in ZTNET. Save the network ID for provisioning.
+Create the Q-Box network in ZTNET.
+
+Save the network ID for Q-Box provisioning.
+
+## 7. Provision Q-Boxes
+
+Install the generated Moon file on each Q-Box:
+
+```bash
+sudo mkdir -p /var/lib/zerotier-one/moons.d
+
+sudo curl -fsSL \
+  https://zt.q-home.be/qbox/0000009445e68ada.moon \
+  -o /var/lib/zerotier-one/moons.d/0000009445e68ada.moon
+
+sudo chmod 0644 /var/lib/zerotier-one/moons.d/0000009445e68ada.moon
+sudo systemctl restart zerotier-one
+sleep 20
+
+sudo zerotier-cli join <NETWORK_ID>
+```
+
+Authorize the device in ZTNET.
