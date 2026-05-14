@@ -1,20 +1,28 @@
 # Q-Home ZT Planet
 
-Hardened single-server ZeroTier private planet setup for Q-Box Central.
+Hardened single-server ZeroTier setup for Q-Box Central using:
 
-This project deploys:
-
-- ZeroTier One controller/root service
 - ZTNET web UI
+- Self-hosted ZeroTier controller
+- Q-Home Moon / private root
 - PostgreSQL database
 - Caddy reverse proxy with automatic HTTPS
-- Private planet generator
-- Static endpoint for Q-Box planet download
-- Backup and provisioning scripts
+- Q-Box provisioning scripts
+- Backup and operations documentation
 
 > Target OS: Debian 13 cloud VPS with a public static IPv4 address.
 
-## Architecture
+## Current production architecture
+
+This project intentionally uses a **Moon/private root** architecture, not a fully private ZeroTier planet.
+
+Why:
+
+- ordinary ZeroTier One clients continue to work;
+- no custom ZeroTier client build is needed;
+- Q-Boxes only need a `.moon` file in `moons.d`;
+- public ZeroTier planet servers remain available as bootstrap/fallback;
+- the setup is much more stable and maintainable for production.
 
 ```text
 Internet
@@ -23,42 +31,60 @@ Internet
   v
 Caddy
   |-- ZTNET UI/API
-  |-- /qbox/planet
-  |-- /qbox/install-planet.sh
+  |-- /qbox/<moon-id>.moon
+  |-- /qbox/install-moon.sh
 
 Internet
   |
   | 9993/udp
   v
-ZeroTier private root/controller
+ZeroTier controller + Q-Home Moon/private root
 
 ZTNET -> ZeroTier local controller API
 ZTNET -> PostgreSQL
-Q-Box -> downloads custom planet -> joins Q-Home network
+Q-Box -> downloads Q-Home .moon file -> joins Q-Home ZeroTier network
 ```
 
 ## Important notes
 
-A fully private planet requires every Q-Box/client to use the custom `planet` file. Standard ZeroTier clients remain usable, but they must be provisioned with the Q-Home planet file.
+This repository no longer recommends replacing the ZeroTier `planet` file on clients.
 
-For production, use at least two root servers in different locations. This repository starts with a single-server setup because it is simpler for the first cloud deployment.
+The supported Q-Box approach is:
 
-## Quick start
+1. install the ordinary ZeroTier One client;
+2. place the Q-Home `.moon` file in `/var/lib/zerotier-one/moons.d/`;
+3. restart ZeroTier One;
+4. join the Q-Home network;
+5. authorize the member in ZTNET.
+
+A fully private planet was evaluated, but rejected for production because it is more fragile, harder to maintain, and requires replacing client planet files. Moon/private root deployment gives Q-Home control over its own root/discovery infrastructure while keeping standard client compatibility.
+
+For production, use at least two Moon/root servers in different locations. This repository starts with a single-server setup because it is simpler for the first cloud deployment.
+
+## Quick start without Git on the server
 
 ```bash
-git clone https://github.com/q-home/qhome-zt-planet.git
-cd qhome-zt-planet
+cd /opt
+mkdir -p ZT-PLANET
+cd ZT-PLANET
+
+curl -L https://github.com/Q-Home/ZT-PLANET/archive/refs/heads/main.tar.gz \
+  | tar -xz --strip-components=1
+
 cp .env.example .env
 nano .env
+chmod +x scripts/*.sh
 sudo ./scripts/install-debian13.sh
 sudo ./scripts/deploy.sh
 sudo ./scripts/generate-planet.sh
 ```
 
+> Historical note: `generate-planet.sh` currently generates the Moon/private root world file. The filename remains for backwards compatibility and should be renamed in a future cleanup.
+
 Then open:
 
 ```text
-https://zt.example.com
+https://zt.q-home.be
 ```
 
 Create the first ZTNET user. The first user becomes admin.
@@ -66,7 +92,7 @@ Create the first ZTNET user. The first user becomes admin.
 ## Required DNS
 
 ```text
-zt.example.com -> your server public IPv4
+zt.q-home.be -> your server public IPv4
 ```
 
 ## Required firewall ports
@@ -74,16 +100,24 @@ zt.example.com -> your server public IPv4
 ```text
 80/tcp    Caddy / ACME
 443/tcp   ZTNET and provisioning
-9993/udp  ZeroTier private planet/root
+9993/udp  ZeroTier transport / Moon
 22/tcp    SSH, preferably IP restricted
 ```
 
 ## Q-Box provisioning
 
-On the Q-Box:
+Example using the generated Moon file:
 
 ```bash
-curl -fsSL https://zt.example.com/qbox/install-planet.sh | sudo sh
+sudo mkdir -p /var/lib/zerotier-one/moons.d
+
+sudo curl -fsSL \
+  https://zt.q-home.be/qbox/0000009445e68ada.moon \
+  -o /var/lib/zerotier-one/moons.d/0000009445e68ada.moon
+
+sudo chmod 0644 /var/lib/zerotier-one/moons.d/0000009445e68ada.moon
+sudo systemctl restart zerotier-one
+sleep 20
 sudo zerotier-cli join <NETWORK_ID>
 ```
 
@@ -93,7 +127,7 @@ Then authorize the Q-Box in ZTNET.
 
 - [Debian 13 setup](docs/debian-13-setup.md)
 - [Deployment guide](docs/deployment.md)
-- [Private planet details](docs/private-planet.md)
+- [Moon/private root details](docs/private-planet.md)
 - [Q-Box provisioning](docs/qbox-provisioning.md)
 - [Backup and restore](docs/backup-restore.md)
 - [Security hardening](docs/security.md)
