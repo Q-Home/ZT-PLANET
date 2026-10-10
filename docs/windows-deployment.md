@@ -1,9 +1,8 @@
-# Windows deployment
+# Windows client installation
 
 This guide connects a Windows PC or Windows Server to the existing Q-Home
 ZeroTier network using the standard ZeroTier One client and Q-Home Moon file.
-The central ZTNET/controller stack remains on Linux. For hosting that stack on
-a Windows machine, see [Server hosting on Windows](#server-hosting-on-windows).
+This guide covers client installation only; it does not change the central server deployment.
 
 ## Prerequisites
 
@@ -213,37 +212,12 @@ Windows device needs its own identity and authorization.
 | `PORT_ERROR` | Inspect the ZeroTier virtual adapter/driver and consult the official Windows troubleshooting guide |
 | Network `OK`, service unreachable | Check peer authorization, managed IPs/routes, application listener and receiving Windows Firewall rules |
 
-## Server hosting on Windows
-
-The repository's server deployment is designed for **Debian 13**. It uses Linux
-shell scripts, Linux containers, `/dev/net/tun` and Linux container capabilities.
-There is no native Windows server deployment script in this repository.
-
-For a Windows host, run a **Debian 13 virtual machine**, for example with Hyper-V:
-
-1. Create a Debian 13 VM with persistent storage and an external virtual switch
-   that connects it to the appropriate physical network.
-2. Give the VM a stable IP. If it is behind a router, forward TCP 80/443 and
-   UDP 9993 from the public IPv4 address to the VM. Restrict SSH access.
-3. Point `ZT_DOMAIN` DNS at the public IPv4 and set `ZT_PUBLIC_ENDPOINT` to the
-   public address/UDP port that actually reaches the VM.
-4. Inside Debian, follow [Debian setup](debian-13-setup.md) and
-   [deployment](deployment.md), including Moon generation and ZTNET setup.
-5. Configure VM automatic startup and verify external HTTPS/UDP reachability
-   after a host reboot. Follow the [backup guide](backup-restore.md).
-
-The existing Compose configuration has not been validated on Docker Desktop/WSL2.
-It should not be treated as a supported Windows production deployment without
-testing TUN support, UDP forwarding, persistence and unattended startup. Docker
-Desktop is not supported on Windows Server.
-
 ## References and validation status
 
 - [ZeroTier client configuration and data directory](https://docs.zerotier.com/config/)
 - [ZeroTier CLI and status meanings](https://docs.zerotier.com/cli/)
 - [ZeroTier private roots/Moons](https://docs.zerotier.com/roots/)
 - [ZeroTier Windows troubleshooting](https://docs.zerotier.com/faq-windows/)
-- [Docker Desktop Windows requirements](https://docs.docker.com/desktop/setup/install/windows-install/)
 
 Commands were reviewed against the repository and official documentation. A live
 Windows installation and end-to-end connection to the Q-Home server have not
