@@ -1,5 +1,8 @@
 # Deployment
 
+This guide deploys the central stack on Debian/Linux. For Windows clients and
+hosting the stack in a Linux VM on Windows, see [Windows deployment](windows-deployment.md).
+
 ## 1. Configure environment
 
 ```bash
