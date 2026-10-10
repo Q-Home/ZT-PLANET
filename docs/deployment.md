@@ -1,5 +1,7 @@
 # Deployment
 
+For installation on Windows clients, see [Windows client installation](windows-deployment.md).
+
 ## 1. Configure environment
 
 ```bash

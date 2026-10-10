@@ -129,6 +129,7 @@ Then authorize the Q-Box in ZTNET.
 - [Deployment guide](docs/deployment.md)
 - [Moon/private root details](docs/private-planet.md)
 - [Q-Box provisioning](docs/qbox-provisioning.md)
+- [Windows client installation](docs/windows-deployment.md)
 - [Backup and restore](docs/backup-restore.md)
 - [Security hardening](docs/security.md)
 - [Operations](docs/operations.md)
