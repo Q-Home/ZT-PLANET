@@ -1,5 +1,8 @@
 # Q-Box provisioning
 
+The commands below target Linux Q-Boxes. For Windows PCs or Windows Server
+clients, see [Windows deployment and provisioning](windows-deployment.md).
+
 ## Recommended provisioning approach
 
 Q-Home uses:
